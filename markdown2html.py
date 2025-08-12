@@ -15,6 +15,7 @@ def line_parse(input_file):
             lines_list.append(line)
     return lines_list
 
+
 def convert_md_to_html(input_file):
     '''Convert input .md file into .html output file.'''
     input_list = line_parse(input_file)
@@ -51,7 +52,7 @@ def main():
     if not os.path.isfile(input_md):
         sys.stderr.write(f"Missing {input_md}\n")
         sys.exit(1)
-    
+
     copy_into_html(input_md, output_html)
 
     sys.exit(0)
