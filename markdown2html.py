@@ -17,15 +17,35 @@ def line_parse(input_file):
 
 
 def convert_md_to_html(input_file):
-    '''Convert input .md file into .html output file.'''
+    '''Convert input .md file into .html output file'''
     input_list = line_parse(input_file)
     html_lines = []
+    inList = False
+
     for line in input_list:
+
+        # Titles '#'
         if line.startswith("#"):
+            if inList:
+                html_lines.append("</ul>")
+                inList = False
             level = len(line.split(" ")[0])
             text = line[level:].strip()
             line_output = f"<h{level}>{text}</h{level}>"
             html_lines.append(line_output)
+
+        # Unsorted lists '-'
+        elif line.startswith('-'):
+            text = line[1:].strip()
+            if not inList:
+                html_lines.append("<ul>")
+                inList = True
+            html_lines.append(f"\t<li>{text}</li>")
+
+    if inList:
+        html_lines.append("</ul>")
+        inList = False
+
     return html_lines
 
 
@@ -38,7 +58,6 @@ def copy_into_html(md_file, html_file):
                 file.write(line + "\n")
             else:
                 file.write(line)
-
 
 def main():
     '''main function'''
