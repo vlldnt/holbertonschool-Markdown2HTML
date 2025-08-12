@@ -59,6 +59,7 @@ def copy_into_html(md_file, html_file):
             else:
                 file.write(line)
 
+
 def main():
     '''main function'''
     if len(sys.argv) != 3:
