@@ -17,33 +17,112 @@ def line_parse(input_file):
 
 
 def convert_md_to_html(input_file):
+    """Convert input .md file into .html output file"""
+    input_list = line_parse(input_file)
+    html_lines = []
+    inList = False
+    listTag = None  # "ul" or "ol"
+
+    for line in input_list:
+        line = line.strip()
+
+        # Titles '#'
+        if line.startswith("#"):
+            if inList:
+                html_lines.append(f"</{listTag}>")
+                inList = False
+                listTag = None
+            level = len(line.split(" ")[0])
+            text = line[level:].strip()
+            html_lines.append(f"<h{level}>{text}</h{level}>")
+
+        # Unordered lists '-'
+        elif line.startswith('-'):
+            text = line[1:].strip()
+            if not inList:
+                html_lines.append("<ul>")
+                inList = True
+                listTag = "ul"
+            elif inList and listTag != "ul":
+                html_lines.append(f"</{listTag}>")
+                html_lines.append("<ul>")
+                listTag = "ul"
+            html_lines.append(f"\t<li>{text}</li>")
+
+        # Ordered lists '*'
+        elif line.startswith('*'):
+            text = line[1:].strip()
+            if not inList:
+                html_lines.append("<ol>")
+                inList = True
+                listTag = "ol"
+            elif inList and listTag != "ol":
+                html_lines.append(f"</{listTag}>")
+                html_lines.append("<ol>")
+                listTag = "ol"
+            html_lines.append(f"\t<li>{text}</li>")
+
+        # Other text
+        else:
+            if inList:
+                html_lines.append(f"</{listTag}>")
+                inList = False
+                listTag = None
+            if line:
+                html_lines.append(f"<p>{line}</p>")
+
+    # Close any remaining list
+    if inList:
+        html_lines.append(f"</{listTag}>")
+
+    return html_lines
     '''Convert input .md file into .html output file'''
     input_list = line_parse(input_file)
     html_lines = []
     inList = False
+    listType = None
 
     for line in input_list:
 
         # Titles '#'
         if line.startswith("#"):
             if inList:
-                html_lines.append("</ul>")
+                html_lines.append(f"<{listType}>")
                 inList = False
+                listTag = None
             level = len(line.split(" ")[0])
             text = line[level:].strip()
             line_output = f"<h{level}>{text}</h{level}>"
             html_lines.append(line_output)
 
-        # Unsorted lists '-'
+        # Unordered lists '-'
         elif line.startswith('-'):
             text = line[1:].strip()
             if not inList:
-                html_lines.append("<ul>")
+                listType = "ul"
+                html_lines.append(f"<{listType}>")
                 inList = True
+            elif inList and listTag != "ul":
+                html_lines.append(f"</{listTag}>")
+                html_lines.append("<ul>")
+                listTag = "ul"
+            html_lines.append(f"\t<li>{text}</li>")
+        
+        # Ordered lists '*'
+        elif line.startswith('*'):
+            text = line[1:].strip()
+            if not inList:
+                listType = "ol"
+                html_lines.append(f"<{listType}>")
+                inList = True
+            elif inList and listTag != "ol":
+                html_lines.append(f"</{listTag}>")
+                html_lines.append("<ol>")
+                listTag = "ol"
             html_lines.append(f"\t<li>{text}</li>")
 
     if inList:
-        html_lines.append("</ul>")
+        html_lines.append(f"<{listType}>")
         inList = False
 
     return html_lines
@@ -61,7 +140,7 @@ def copy_into_html(md_file, html_file):
 
 
 def main():
-    '''main function'''
+    '''Main function'''
     if len(sys.argv) != 3:
         sys.stderr.write("Usage: ./markdown2html.py README.md README.html\n")
         sys.exit(1)
