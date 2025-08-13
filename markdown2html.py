@@ -3,8 +3,8 @@
 
 import sys
 import os
+import hashlib
 import re
-
 
 def line_parse(input_file):
     '''Parse lines inside the README.md (input_file)'''
@@ -12,15 +12,37 @@ def line_parse(input_file):
         return [line.rstrip("\n") for line in file]
 
 
-def line_bold_embled(text):
+def paragraph_change(text):
     """Convert markdown bold/italic """
-    # Bold handling
+    
+    # Handling the remove of the letter c and C  : ((<STRING>)) 
+    pattern_parentheses = r'\(\((.*?)\)\)'
+    while True:
+        match = re.search(pattern_parentheses, text)
+        if not match:
+            break
+        content = match.group(1)
+        processed_content = re.sub(r'(\*\*c\*\*|\*\*C\*\*|\_\_c\_\_|\_\_C\_\_|c|C)', '', content)
+        text = text.replace(match.group(0), processed_content, 1)
+    
+    # Handling the MD5 conversion : [[<STRING>]]
+    pattern = r'\[\[(.*?)\]\]'
+    while True:
+        match_pattern = re.search(pattern, text)
+        if not match_pattern:
+            break
+        full_match = match_pattern.group(0)
+        content = match_pattern.group(1)
+        md5 = hashlib.md5(content.encode()).hexdigest()
+        text = text.replace(full_match, md5, 1)    
+    
+    # Bold handling (**<STRING>**)
     while "**" in text:
         text = text.replace("**", "<b>", 1)
         if "**" in text:
             text = text.replace("**", "</b>", 1)
 
-    # Italic handling
+    # Emphasized handling (__<STRING>__)
     while "__" in text:
         text = text.replace("__", "<em>", 1)
         if "__" in text:
@@ -51,11 +73,11 @@ def convert_md_to_html(input_file):
 
             level = len(stripped.split(" ")[0])
             text = stripped[level:].strip()
-            html_lines.append(f"<h{level}>{line_bold_embled(text)}</h{level}>")
+            html_lines.append(f"<h{level}>{paragraph_change(text)}</h{level}>")
 
         # Unordered list (- )
         elif stripped.startswith('- '):
-            text = line_bold_embled(stripped[2:])
+            text = paragraph_change(stripped[2:])
             if not in_list or list_tag != "ul":
                 if in_list:
                     html_lines.append(f"</{list_tag}>")
@@ -66,7 +88,7 @@ def convert_md_to_html(input_file):
 
         # Ordered list (* )
         elif stripped.startswith('* '):
-            text = line_bold_embled(stripped[2:])
+            text = paragraph_change(stripped[2:])
             if not in_list or list_tag != "ol":
                 if in_list:
                     html_lines.append(f"</{list_tag}>")
@@ -86,7 +108,7 @@ def convert_md_to_html(input_file):
                     in_paragraph = True
                 else:
                     html_lines.append(f"\t<br />")
-                html_lines.append(f"\t{line_bold_embled(stripped)}")
+                html_lines.append(f"\t{paragraph_change(stripped)}")
             else:
                 if in_paragraph:
                     html_lines.append("</p>")
