@@ -23,6 +23,7 @@ def paragraph_change(text):
         if not match:
             break
         content = match.group(1)
+        # adding if : **c** **C** and __c__ and __C__
         processed_content = re.sub(
             r'(\*\*c\*\*|\*\*C\*\*|\_\_c\_\_|\_\_C\_\_|c|C)', '', content)
         text = text.replace(match.group(0), processed_content, 1)
