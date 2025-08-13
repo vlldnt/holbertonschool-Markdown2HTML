@@ -21,7 +21,8 @@ def convert_md_to_html(input_file):
     input_list = line_parse(input_file)
     html_lines = []
     inList = False
-    listTag = None  # "ul" or "ol"
+    listTag = None
+    inParagraph = False
 
     for line in input_list:
         line = line.strip()
@@ -62,18 +63,36 @@ def convert_md_to_html(input_file):
                 listTag = "ol"
             html_lines.append(f"\t<li>{text}</li>")
 
-        # Other text
+        # Other text / ** / _
         else:
             if inList:
                 html_lines.append(f"</{listTag}>")
                 inList = False
                 listTag = None
-            if line:
-                html_lines.append(f"<p>{line}</p>")
 
-    # Close any remaining list
-    if inList:
-        html_lines.append(f"</{listTag}>")
+            stripped_line = line.strip("\n")
+
+            if stripped_line:
+                if not inParagraph:
+                    html_lines.append("<p>")
+                    inParagraph = True
+                    firstLine = True
+
+                if firstLine:
+                    html_lines.append(f"\t{stripped_line}")
+                    firstLine = False
+                else:
+                    html_lines.append(f"\t\t<br />")
+                    html_lines.append(f"\t{stripped_line}")
+
+            else:
+                if inParagraph:
+                    html_lines.append("</p>")
+                    inParagraph = False
+
+            # Close any remaining list
+            if inList:
+                html_lines.append(f"</{listTag}>")
 
     return html_lines
 
