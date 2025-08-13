@@ -6,6 +6,7 @@ import os
 import hashlib
 import re
 
+
 def line_parse(input_file):
     '''Parse lines inside the README.md (input_file)'''
     with open(input_file, "r", encoding='utf-8') as file:
@@ -14,17 +15,18 @@ def line_parse(input_file):
 
 def paragraph_change(text):
     """Convert markdown bold/italic """
-    
-    # Handling the remove of the letter c and C  : ((<STRING>)) 
+
+    # Handling the remove of the letter c and C  : ((<STRING>))
     pattern_parentheses = r'\(\((.*?)\)\)'
     while True:
         match = re.search(pattern_parentheses, text)
         if not match:
             break
         content = match.group(1)
-        processed_content = re.sub(r'(\*\*c\*\*|\*\*C\*\*|\_\_c\_\_|\_\_C\_\_|c|C)', '', content)
+        processed_content = re.sub(
+            r'(\*\*c\*\*|\*\*C\*\*|\_\_c\_\_|\_\_C\_\_|c|C)', '', content)
         text = text.replace(match.group(0), processed_content, 1)
-    
+
     # Handling the MD5 conversion : [[<STRING>]]
     pattern = r'\[\[(.*?)\]\]'
     while True:
@@ -34,8 +36,8 @@ def paragraph_change(text):
         full_match = match_pattern.group(0)
         content = match_pattern.group(1)
         md5 = hashlib.md5(content.encode()).hexdigest()
-        text = text.replace(full_match, md5, 1)    
-    
+        text = text.replace(full_match, md5, 1)
+
     # Bold handling (**<STRING>**)
     while "**" in text:
         text = text.replace("**", "<b>", 1)
