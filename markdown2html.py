@@ -1,98 +1,102 @@
 #!/usr/bin/python3
 '''Markdown to HTML converter script'''
 
-
 import sys
 import os
+import re
 
 
 def line_parse(input_file):
     '''Parse lines inside the README.md (input_file)'''
-    lines_list = []
     with open(input_file, "r", encoding='utf-8') as file:
-        for line in file:
-            line = line.rstrip("\n")
-            lines_list.append(line)
-    return lines_list
+        return [line.rstrip("\n") for line in file]
+
+
+def line_bold_embled(text):
+    """Convert markdown bold/italic """
+    # Bold handling
+    while "**" in text:
+        text = text.replace("**", "<b>", 1)
+        if "**" in text:
+            text = text.replace("**", "</b>", 1)
+
+    # Italic handling
+    while "__" in text:
+        text = text.replace("__", "<em>", 1)
+        if "__" in text:
+            text = text.replace("__", "</em>", 1)
+
+    return text
 
 
 def convert_md_to_html(input_file):
-    """Convert input .md file into .html output file"""
+    """Convert input md syntac into html syntax"""
     input_list = line_parse(input_file)
     html_lines = []
-    inList = False
-    listTag = None
-    inParagraph = False
+    in_list = False
+    list_tag = None
+    in_paragraph = False
 
     for line in input_list:
-        line = line.strip()
+        stripped = line.strip()
 
-        # Titles '#'
-        if line.startswith("#"):
-            if inList:
-                html_lines.append(f"</{listTag}>")
-                inList = False
-                listTag = None
-            level = len(line.split(" ")[0])
-            text = line[level:].strip()
-            html_lines.append(f"<h{level}>{text}</h{level}>")
+        # Title handling (#, ##, ###, ####, #####, ######)
+        if stripped.startswith("#"):
+            if in_list:
+                html_lines.append(f"</{list_tag}>")
+                in_list = False
+            if in_paragraph:
+                html_lines.append("</p>")
+                in_paragraph = False
 
-        # Unordered lists '-'
-        elif line.startswith('-'):
-            text = line[1:].strip()
-            if not inList:
+            level = len(stripped.split(" ")[0])
+            text = stripped[level:].strip()
+            html_lines.append(f"<h{level}>{line_bold_embled(text)}</h{level}>")
+
+        # Unordered list (- )
+        elif stripped.startswith('- '):
+            text = line_bold_embled(stripped[2:])
+            if not in_list or list_tag != "ul":
+                if in_list:
+                    html_lines.append(f"</{list_tag}>")
                 html_lines.append("<ul>")
-                inList = True
-                listTag = "ul"
-            elif inList and listTag != "ul":
-                html_lines.append(f"</{listTag}>")
-                html_lines.append("<ul>")
-                listTag = "ul"
+                in_list = True
+                list_tag = "ul"
             html_lines.append(f"\t<li>{text}</li>")
 
-        # Ordered lists '*'
-        elif line.startswith('*'):
-            text = line[1:].strip()
-            if not inList:
+        # Ordered list (* )
+        elif stripped.startswith('* '):
+            text = line_bold_embled(stripped[2:])
+            if not in_list or list_tag != "ol":
+                if in_list:
+                    html_lines.append(f"</{list_tag}>")
                 html_lines.append("<ol>")
-                inList = True
-                listTag = "ol"
-            elif inList and listTag != "ol":
-                html_lines.append(f"</{listTag}>")
-                html_lines.append("<ol>")
-                listTag = "ol"
+                in_list = True
+                list_tag = "ol"
             html_lines.append(f"\t<li>{text}</li>")
 
-        # Other text / ** / _
+        # Paragraph text (p / br)
         else:
-            if inList:
-                html_lines.append(f"</{listTag}>")
-                inList = False
-                listTag = None
-
-            stripped_line = line.strip("\n")
-
-            if stripped_line:
-                if not inParagraph:
+            if in_list:
+                html_lines.append(f"</{list_tag}>")
+                in_list = False
+            if stripped:
+                if not in_paragraph:
                     html_lines.append("<p>")
-                    inParagraph = True
-                    firstLine = True
-
-                if firstLine:
-                    html_lines.append(f"\t{stripped_line}")
-                    firstLine = False
+                    in_paragraph = True
                 else:
-                    html_lines.append(f"\t\t<br />")
-                    html_lines.append(f"\t{stripped_line}")
-
+                    html_lines.append(f"\t<br />")
+                html_lines.append(f"\t{line_bold_embled(stripped)}")
             else:
-                if inParagraph:
+                if in_paragraph:
                     html_lines.append("</p>")
-                    inParagraph = False
+                    in_paragraph = False
 
-            # Close any remaining list
-            if inList:
-                html_lines.append(f"</{listTag}>")
+    # Closing opened tag
+    if in_list:
+        html_lines.append(f"</{list_tag}>")
+    if in_paragraph:
+        html_lines.append("</p>")
 
     return html_lines
 
@@ -122,7 +126,6 @@ def main():
         sys.exit(1)
 
     copy_into_html(input_md, output_html)
-
     sys.exit(0)
 
 
